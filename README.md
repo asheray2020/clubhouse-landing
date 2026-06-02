@@ -1,0 +1,1 @@
+The Club House is a platform that connects college athletes with elite summer employment opportunities at clubs, camps, academies, and resorts through intelligent matching, reputation tracking, and logistics management.
