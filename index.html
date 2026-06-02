@@ -580,8 +580,8 @@ footer{
     </p>
 
     <div class="hero-ctas">
-      <a href="#waitlist" class="btn-primary">I'm an Athlete</a>
-      <a href="#waitlist" class="btn-outline">I Represent a Club</a>
+      <a href="https://tally.so/r/Gx5EKz" target="_blank" class="btn-primary">I'm an Athlete</a>
+      <a href="https://tally.so/r/q4vQG8" target="_blank" class="btn-outline">I Represent a Club</a>
     </div>
 
     <div class="hero-stats">
@@ -678,7 +678,7 @@ footer{
         <li>Match recommendations tailored to your preferences</li>
         <li>Housing filter — find clubs that provide accommodations</li>
       </ul>
-      <a href="#waitlist" class="btn-primary">Join as an Athlete</a>
+      <a href="https://tally.so/r/Gx5EKz" target="_blank" class="btn-primary">Join as an Athlete</a>
     </div>
     <div class="split-divider"></div>
     <div class="split-col" id="clubs">
@@ -693,7 +693,7 @@ footer{
         <li>Track repeat placements and long-term relationships</li>
         <li>Review athletes after the season to help the community</li>
       </ul>
-      <a href="#waitlist" class="btn-primary">Join as a Club</a>
+      <a href="https://tally.so/r/q4vQG8" target="_blank" class="btn-primary">Join as a Club</a>
     </div>
   </div>
 </section>
@@ -854,11 +854,15 @@ footer{
 <script>
 function handleSubmit(e, type) {
   e.preventDefault();
+  if(type === 'athlete') {
+    window.open('https://tally.so/r/Gx5EKz', '_blank');
+  } else if(type === 'club') {
+    // Club Tally link — update when ready
+    window.open('https://tally.so/r/q4vQG8', '_blank');
+  }
   const card = e.target.closest('.form-card');
   card.querySelector('.form-fields-wrap').style.display = 'none';
   card.querySelector('.success-state').style.display = 'block';
-  // TODO: replace with Supabase insert
-  // fetch('/api/waitlist', { method:'POST', body: JSON.stringify({type, ...formData}) })
 }
 
 // Scroll anchor smoothing
