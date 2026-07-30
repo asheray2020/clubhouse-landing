@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Editor / OS noise
+*.swp
+Thumbs.db
+
+# Local env — never commit real Supabase keys.
+# assets/js/config.js is intentionally tracked but must only ever
+# contain empty strings or a public anon key, never service_role.
+.env
+.env.*

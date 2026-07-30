@@ -1,0 +1,643 @@
+/* ============================================================
+   The Club House — "The Scorecard"
+   Design language: club print culture. Scorecards, tournament
+   programs, letterpress member stationery.
+
+   Two hard rules, both learned from measured failures in the
+   previous build (see docs/DESIGN.md):
+     1. Every text colour clears WCAG AA 4.5:1 in BOTH themes.
+     2. Body text never goes below weight 400. Light weights
+        halate on dark surfaces and turn to mush on phones.
+   ============================================================ */
+
+/* ── TOKENS ────────────────────────────────────────────────── */
+:root {
+  color-scheme: light dark;
+
+  /* Paper — warm ivory scorecard stock */
+  --paper:      #faf6ec;
+  --paper-2:    #f4eee0;
+  --paper-3:    #ece4d2;
+
+  /* Ink — deep navy. Printed, not digital: never pure black. */
+  --ink:        #16233a;   /* 14.61:1 on paper */
+  --ink-2:      #4a5670;   /*  6.83:1 on paper — secondary text */
+
+  /* Action — hunter green. Course, court, club blazer. */
+  --green:      #1d5340;   /*  8.25:1 on paper */
+  --green-deep: #163f31;
+  --on-green:   #faf6ec;   /*  8.25:1 on green */
+
+  /* Gold — ORNAMENT ONLY. Never a button, never a large field.
+     Deliberately darker than a decorative gold so that when it
+     is used for small-caps labels it still clears 4.5:1. */
+  --gold:       #8a6528;   /*  4.91:1 on paper */
+  --gold-line:  rgba(138, 101, 40, 0.32);
+
+  --rule:       rgba(22, 35, 58, 0.16);
+  --rule-soft:  rgba(22, 35, 58, 0.08);
+  --shadow:     0 1px 2px rgba(22, 35, 58, 0.05),
+                0 8px 24px -12px rgba(22, 35, 58, 0.14);
+
+  --logo-ink:   var(--ink);
+
+  /* Type */
+  --ff-display: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
+  --ff-body:    'Outfit', system-ui, -apple-system, sans-serif;
+
+  /* Fluid scale. Floors are tuned for a 375px phone — the old
+     build's clamp() floors resolved to desktop sizes on mobile. */
+  --fs-hero:    clamp(2.25rem, 7.5vw, 4.25rem);
+  --fs-h2:      clamp(1.75rem, 4.4vw, 2.75rem);
+  --fs-h3:      clamp(1.125rem, 2vw, 1.3125rem);
+  --fs-lead:    clamp(1rem, 1.6vw, 1.1875rem);
+  --fs-body:    1rem;
+  --fs-sm:      0.9375rem;
+  --fs-label:   0.75rem;
+
+  /* Space */
+  --sp-section: clamp(3rem, 8vw, 6.5rem);
+  --sp-gutter:  clamp(1.25rem, 4vw, 2.5rem);
+  --measure:    1120px;
+
+  /* The logo is a stacked lockup (crest over wordmark) at a
+     399:245 ratio, so the bar has to be tall enough to seat it
+     with breathing room rather than cropping it. */
+  --nav-h:      74px;
+
+  --r-sm: 3px;
+  --r:    6px;
+  --r-lg: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Warm charcoal, not the near-black navy that caused the
+       halation problem. Surfaces stay tonally separated. */
+    --paper:      #151a21;
+    --paper-2:    #1c222b;
+    --paper-3:    #242c37;
+
+    --ink:        #ede7da;
+    --ink-2:      #a7b0bf;   /* 7.99:1 on paper */
+
+    --green:      #5fa783;   /* 6.11:1 on paper */
+    --green-deep: #79bd9a;
+    --on-green:   #10161d;   /* 6.11:1 on green */
+
+    --gold:       #cfa95e;   /* 7.90:1 on paper */
+    --gold-line:  rgba(207, 169, 94, 0.34);
+
+    --rule:       rgba(237, 231, 218, 0.16);
+    --rule-soft:  rgba(237, 231, 218, 0.08);
+    --shadow:     0 1px 2px rgba(0, 0, 0, 0.3),
+                  0 8px 24px -12px rgba(0, 0, 0, 0.5);
+
+    --logo-ink:   var(--ink);
+  }
+}
+
+/* ── RESET / BASE ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--nav-h) + 1rem); /* so anchors clear the fixed nav */
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+body {
+  font-family: var(--ff-body);
+  font-size: var(--fs-body);
+  font-weight: 400;               /* floor. never 300 for body. */
+  line-height: 1.65;
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+img { max-width: 100%; height: auto; display: block; }
+
+:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+.skip-link {
+  position: absolute; top: 0; left: 50%;
+  transform: translate(-50%, -110%);
+  z-index: 200;
+  background: var(--green); color: var(--on-green);
+  padding: 0.75rem 1.5rem;
+  font-size: var(--fs-sm); font-weight: 600;
+  border-radius: 0 0 var(--r) var(--r);
+  text-decoration: none;
+}
+.skip-link:focus { transform: translate(-50%, 0); }
+
+/* ── TYPE PRIMITIVES ──────────────────────────────────────── */
+.display {
+  font-family: var(--ff-display);
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+}
+
+/* Cormorant ships old-style (text) figures by default, which
+   makes "01" read as "oI" and mangles any number used as data.
+   Force lining figures wherever digits carry meaning. */
+.step-num, .stat-num, .rep-score {
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: 'lnum' 1, 'tnum' 1;
+}
+.display em { font-style: italic; font-weight: 500; color: var(--green); }
+
+/* Letterpress small caps. High contrast because it is real text,
+   not decoration — the old build set these at 2.61:1. */
+.label {
+  font-family: var(--ff-body);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.label-rule { display: flex; align-items: center; gap: 0.875rem; }
+.label-rule::before {
+  content: ''; width: 26px; height: 1px;
+  background: var(--gold); flex: none;
+}
+.label-rule.is-centered { justify-content: center; }
+.label-rule.is-centered::after {
+  content: ''; width: 26px; height: 1px;
+  background: var(--gold); flex: none;
+}
+/* Once the label wraps, flanking rules read as stray marks
+   beside the first line rather than as a frame. */
+@media (max-width: 520px) {
+  .label-rule.is-centered::before,
+  .label-rule.is-centered::after { display: none; }
+}
+
+.lead {
+  font-size: var(--fs-lead);
+  color: var(--ink-2);
+  line-height: 1.7;
+  max-width: 46ch;
+}
+
+/* ── LAYOUT ───────────────────────────────────────────────── */
+.wrap { max-width: var(--measure); margin: 0 auto; padding: 0 var(--sp-gutter); }
+.section { padding: var(--sp-section) 0; }
+.section.is-tint { background: var(--paper-2); }
+.section-head { margin-bottom: clamp(2.25rem, 5vw, 3.5rem); }
+.section-head .display { font-size: var(--fs-h2); margin: 1rem 0 0.875rem; }
+.section-head.is-centered { text-align: center; }
+.section-head.is-centered .display { margin-inline: auto; max-width: 24ch; }
+.section-head.is-centered .lead { margin-inline: auto; }
+
+.rule { height: 1px; background: var(--rule); border: 0; }
+
+/* ── LOGO ─────────────────────────────────────────────────── */
+/* One greyscale mask asset, tinted by CSS. Replaces three
+   base64 copies of a 1024x1024 JPEG (~12.6MB of decoded
+   bitmap) with a single 11.6KB decode that recolours itself
+   for dark mode. No mix-blend-mode, no filters, no extra
+   composited layers. */
+.logo-mark {
+  display: block;
+  width: var(--logo-w, 120px);
+  aspect-ratio: 399 / 245;
+  background-color: var(--logo-ink);
+  -webkit-mask: url('../img/logo-mask.webp') center / contain no-repeat;
+          mask: url('../img/logo-mask.webp') center / contain no-repeat;
+}
+/* Fallback for engines without CSS masking: show the wordmark. */
+.logo-text {
+  font-family: var(--ff-display);
+  font-size: 1.25rem; font-weight: 600;
+  letter-spacing: 0.02em; color: var(--ink);
+  white-space: nowrap;
+}
+@supports ((mask: url('#x')) or (-webkit-mask: url('#x'))) {
+  .logo-text { display: none; }
+}
+@supports not ((mask: url('#x')) or (-webkit-mask: url('#x'))) {
+  .logo-mark { display: none; }
+}
+
+/* ── NAV ──────────────────────────────────────────────────── */
+.nav {
+  position: fixed; inset: 0 0 auto 0; z-index: 100;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+/* backdrop-filter is a per-frame GPU readback and was part of
+   the mobile crash stack. Desktop only, and only where the
+   browser says it is cheap. */
+@media (min-width: 769px) {
+  @supports (backdrop-filter: blur(12px)) {
+    .nav {
+      background: color-mix(in srgb, var(--paper) 88%, transparent);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+  }
+}
+
+.nav-inner {
+  max-width: var(--measure); margin: 0 auto;
+  padding: 0 var(--sp-gutter);
+  height: var(--nav-h);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem;
+}
+.nav-logo { display: flex; align-items: center; text-decoration: none; --logo-w: 92px; }
+.nav-links { display: flex; align-items: center; gap: 1.75rem; }
+/* :not(.btn) matters — a bare `.nav-links a` rule outranks
+   `.btn-primary` on specificity and would repaint the CTA's
+   label in body-text colour against the green fill. */
+.nav-links a:not(.btn) {
+  font-size: var(--fs-sm); font-weight: 500;
+  color: var(--ink-2); text-decoration: none;
+  transition: color 0.18s;
+}
+.nav-links a:not(.btn):hover { color: var(--green); }
+.nav-signin { font-weight: 600 !important; color: var(--ink) !important; }
+
+.nav-toggle {
+  display: none;
+  width: 44px; height: 44px;
+  align-items: center; justify-content: center;
+  background: none; border: 1px solid var(--rule);
+  border-radius: var(--r-sm); cursor: pointer; color: var(--ink);
+}
+.nav-toggle svg { width: 20px; height: 20px; }
+.nav-toggle .icon-x { display: none; }
+.nav-toggle[aria-expanded='true'] .icon-x { display: block; }
+.nav-toggle[aria-expanded='true'] .icon-menu { display: none; }
+
+/* The old build simply set .nav-links{display:none} under
+   768px, which made Sign In and Join Waitlist unreachable on
+   a phone. This is a real menu. */
+@media (max-width: 768px) {
+  .nav-toggle { display: flex; }
+  .nav-links {
+    position: absolute; inset: 64px 0 auto 0;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--paper);
+    border-bottom: 1px solid var(--rule);
+    box-shadow: var(--shadow);
+    padding: 0.5rem var(--sp-gutter) 1.25rem;
+    display: none;
+  }
+  .nav-links.is-open { display: flex; }
+  .nav-links a:not(.btn) {
+    padding: 0.875rem 0;
+    font-size: 1.0625rem;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .nav-links .btn { margin-top: 1rem; justify-content: center; }
+  .nav-links a:not(.btn):last-of-type { border-bottom: 0; }
+}
+
+/* ── BUTTONS ──────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--ff-body); font-size: var(--fs-sm); font-weight: 600;
+  padding: 0.8125rem 1.5rem;
+  border-radius: var(--r);
+  border: 1px solid transparent;
+  cursor: pointer; text-decoration: none;
+  transition: background-color 0.18s, border-color 0.18s, color 0.18s;
+}
+.btn-primary { background: var(--green); color: var(--on-green); }
+.btn-primary:hover { background: var(--green-deep); }
+@media (prefers-color-scheme: dark) {
+  .btn-primary:hover { background: var(--green-deep); }
+}
+.btn-ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
+.btn-ghost:hover { border-color: var(--green); color: var(--green); }
+.btn-block { width: 100%; }
+.btn:disabled { opacity: 0.6; cursor: progress; }
+
+.link-arrow {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: var(--fs-sm); font-weight: 600;
+  color: var(--green); text-decoration: none;
+  border-bottom: 1px solid var(--gold-line);
+  padding-bottom: 2px;
+}
+.link-arrow:hover { border-bottom-color: var(--green); }
+
+/* ── HERO ─────────────────────────────────────────────────── */
+/* The old hero ran 100vh with a 140px crest and a 48px, four
+   line headline: the CTA sat below the fold on a 375px screen. */
+.hero {
+  padding: calc(var(--nav-h) + clamp(2rem, 6vw, 4.5rem)) 0 clamp(2.5rem, 6vw, 4rem);
+  text-align: center;
+  position: relative;
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--paper-2) 70%, transparent) 0%,
+      transparent 70%);
+}
+.hero-crest { --logo-w: clamp(84px, 22vw, 112px); margin: 0 auto 1.75rem; }
+.hero h1 {
+  font-size: var(--fs-hero);
+  max-width: 20ch; margin: 1.25rem auto 0;
+}
+.hero .lead { margin: 1.25rem auto 0; text-align: center; }
+.hero-ctas {
+  margin-top: 2rem;
+  display: flex; flex-direction: column; align-items: center; gap: 1rem;
+}
+.hero-ctas .btn { width: 100%; max-width: 320px; padding: 0.9375rem 1.75rem; font-size: 1rem; }
+@media (min-width: 560px) {
+  .hero-ctas { flex-direction: row; justify-content: center; gap: 1.5rem; }
+  .hero-ctas .btn { width: auto; }
+}
+
+/* Stats — a compact printed row, not three giant columns. */
+.stats {
+  margin: clamp(2.5rem, 6vw, 3.5rem) auto 0;
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  max-width: 620px;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+.stat { padding: 1.25rem 0.5rem; }
+.stat + .stat { border-left: 1px solid var(--rule); }
+.stat-num {
+  display: block;
+  font-family: var(--ff-display); font-size: clamp(1.75rem, 5vw, 2.25rem);
+  font-weight: 600; line-height: 1; color: var(--green);
+}
+.stat-label {
+  display: block; margin-top: 0.5rem;
+  font-size: var(--fs-label); font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-2);        /* was 2.61:1. now 6.83:1. */
+  line-height: 1.35;
+}
+
+/* ── TRUST BAR ────────────────────────────────────────────── */
+/* Replaces the infinite marquee. That marquee animated a track
+   10.9x the viewport width forever, at 2.61:1 contrast — a
+   perf cost AND unreadable while moving. Static and legible. */
+.trust {
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper-2);
+  padding: 1.125rem 0;
+}
+.trust-list {
+  list-style: none;
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 0.625rem 1.5rem;
+}
+.trust-list li {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: var(--fs-label); font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-2);
+}
+.trust-list li::before {
+  content: ''; width: 5px; height: 5px;
+  background: var(--gold); transform: rotate(45deg); flex: none;
+}
+
+/* ── STEPS ────────────────────────────────────────────────── */
+.steps {
+  list-style: none;
+  display: grid; gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+@media (min-width: 620px)  { .steps { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1000px) { .steps { grid-template-columns: repeat(4, 1fr); } }
+
+.step { background: var(--paper); padding: clamp(1.5rem, 4vw, 2rem) clamp(1.25rem, 4vw, 1.75rem); }
+.section.is-tint .step { background: var(--paper-2); }
+.step-num {
+  font-family: var(--ff-display);
+  font-size: 1.5rem; font-weight: 600;
+  color: var(--gold);          /* was gold at 0.15 alpha = 1.31:1 */
+  display: flex; align-items: center; gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.step-num::after { content: ''; flex: 1; height: 1px; background: var(--gold-line); }
+.step h3 {
+  font-family: var(--ff-display); font-size: var(--fs-h3);
+  font-weight: 600; margin-bottom: 0.5rem; line-height: 1.2;
+}
+.step p { font-size: var(--fs-sm); color: var(--ink-2); }
+
+/* ── AUDIENCE BANDS ───────────────────────────────────────── */
+/* Athletes and clubs are not the same person and should not get
+   mirrored columns. Each band gets its own weight and rhythm. */
+.band { padding: var(--sp-section) 0; }
+.band-grid {
+  display: grid; gap: clamp(2rem, 5vw, 3.5rem);
+  align-items: start;
+}
+@media (min-width: 860px) {
+  .band-grid { grid-template-columns: 1fr 1fr; gap: clamp(3rem, 6vw, 5rem); }
+  .band-grid.is-reversed .band-copy { order: 2; }
+}
+.band-copy .display { font-size: var(--fs-h2); margin: 1rem 0 1rem; }
+
+.band--clubs { background: var(--paper-3); }
+.band-cta { margin-top: 1.75rem; }
+
+.checks { list-style: none; margin-top: 1.75rem; display: grid; gap: 0.875rem; }
+.checks li {
+  display: grid; grid-template-columns: 1.25rem 1fr; gap: 0.75rem;
+  font-size: var(--fs-sm); color: var(--ink-2); align-items: start;
+}
+.checks svg { width: 1.25rem; height: 1.25rem; color: var(--green); margin-top: 0.15rem; }
+.checks strong { color: var(--ink); font-weight: 600; }
+
+/* Cost answer — "no fees" was 11px at 2.61:1 next to the form.
+   It is a top objection for a student; it gets real space. */
+.callout {
+  margin-top: 2rem; padding: 1.25rem 1.5rem;
+  background: var(--paper); border: 1px solid var(--gold-line);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 var(--r) var(--r) 0;
+}
+.band--clubs .callout { background: var(--paper-2); }
+.callout p { font-size: var(--fs-sm); color: var(--ink-2); }
+.callout strong { color: var(--ink); font-weight: 600; }
+
+/* ── REPUTATION ───────────────────────────────────────────── */
+.rep-grid { display: grid; gap: 1.5rem; }
+@media (min-width: 760px) { .rep-grid { grid-template-columns: 1fr 1fr; } }
+
+.rep-card {
+  background: var(--paper); border: 1px solid var(--rule);
+  border-radius: var(--r-lg); padding: clamp(1.5rem, 3vw, 2rem);
+  box-shadow: var(--shadow);
+}
+.section.is-tint .rep-card { background: var(--paper); }
+.rep-card h3 {
+  font-family: var(--ff-display); font-size: var(--fs-h3);
+  font-weight: 600; margin: 0.5rem 0 1.5rem;
+}
+.rep-rows { display: grid; gap: 1.125rem; }
+.rep-row {
+  display: grid; grid-template-columns: 1fr auto; gap: 0.5rem 1rem;
+  align-items: baseline;
+}
+.rep-name { font-size: var(--fs-sm); color: var(--ink-2); }
+.rep-score {
+  font-family: var(--ff-display); font-size: 1.0625rem;
+  font-weight: 600; color: var(--green);
+  font-variant-numeric: tabular-nums;
+}
+.rep-track {
+  grid-column: 1 / -1;
+  height: 4px; border-radius: 99px;
+  background: var(--rule-soft); overflow: hidden;
+}
+.rep-fill { height: 100%; border-radius: 99px; background: var(--green); }
+.rep-note { margin-top: 1.5rem; font-size: var(--fs-label); color: var(--ink-2); }
+
+/* ── FORMS ────────────────────────────────────────────────── */
+.forms { display: grid; gap: 1.5rem; }
+@media (min-width: 760px) { .forms { grid-template-columns: 1fr 1fr; } }
+
+.form-card {
+  background: var(--paper); border: 1px solid var(--rule);
+  border-radius: var(--r-lg); padding: clamp(1.75rem, 4vw, 2.5rem);
+  box-shadow: var(--shadow);
+  display: flex; flex-direction: column;
+}
+.form-card.is-featured { border-color: var(--gold-line); border-top: 3px solid var(--gold); }
+.form-card h3 {
+  font-family: var(--ff-display); font-size: clamp(1.375rem, 3vw, 1.625rem);
+  font-weight: 600; line-height: 1.15; margin: 0.75rem 0 0.625rem;
+}
+/* :not(.label) — an element+class selector outranks the bare
+   `.label` class and would strip the eyebrow's gold and size. */
+.form-card > p:not(.label):not(.form-note):not(.form-status) {
+  font-size: var(--fs-sm); color: var(--ink-2); margin-bottom: 1.5rem;
+}
+
+.field { display: grid; gap: 0.375rem; margin-bottom: 0.875rem; }
+.field label { font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.04em; color: var(--ink); }
+.field input, .field select {
+  width: 100%; padding: 0.75rem 0.875rem;
+  font-family: var(--ff-body); font-size: var(--fs-body); font-weight: 400;
+  color: var(--ink);
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r); outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.field input::placeholder { color: var(--ink-2); opacity: 1; }
+.field input:focus-visible, .field select:focus-visible {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 18%, transparent);
+  outline: none;
+}
+.field select {
+  appearance: none; cursor: pointer; padding-right: 2.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234a5670' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 0.875rem center;
+}
+@media (prefers-color-scheme: dark) {
+  .field select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a7b0bf' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+}
+.field-hp { position: absolute; left: -9999px; } /* honeypot */
+
+.form-actions { margin-top: 1.125rem; }
+.form-note { margin-top: 0.75rem; font-size: var(--fs-label); color: var(--ink-2); text-align: center; }
+
+.form-status { margin-top: 1rem; font-size: var(--fs-sm); border-radius: var(--r); }
+.form-status:empty { display: none; }
+.form-status.is-error {
+  padding: 0.75rem 1rem;
+  color: #8c2f22; background: #fdf0ed; border: 1px solid #e9c3bb;
+}
+@media (prefers-color-scheme: dark) {
+  .form-status.is-error { color: #ffb4a6; background: #2c1a17; border-color: #5a2f27; }
+}
+
+.form-done { text-align: center; padding: 1.5rem 0; }
+.form-done .mark {
+  width: 44px; height: 44px; margin: 0 auto 1rem;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+  border: 1px solid var(--green);
+  color: var(--green);
+}
+.form-done .mark svg { width: 20px; height: 20px; }
+.form-done h4 {
+  font-family: var(--ff-display); font-size: 1.375rem;
+  font-weight: 600; margin-bottom: 0.375rem;
+}
+.form-done p { font-size: var(--fs-sm); color: var(--ink-2); }
+[hidden] { display: none !important; }
+
+/* ── FOOTER ───────────────────────────────────────────────── */
+.footer {
+  background: var(--paper-2);
+  border-top: 1px solid var(--rule);
+  padding: clamp(2.5rem, 6vw, 3.5rem) 0 2rem;
+}
+.footer-top {
+  display: grid; gap: 1.75rem; justify-items: center; text-align: center;
+}
+.footer-logo { --logo-w: 116px; }
+.footer-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem 1.75rem; }
+.footer-nav a {
+  font-size: var(--fs-sm); font-weight: 500;
+  color: var(--ink-2); text-decoration: none;
+}
+.footer-nav a:hover { color: var(--green); }
+.footer-base {
+  margin-top: 2rem; padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  font-size: var(--fs-label); color: var(--ink-2);
+  text-align: center; line-height: 1.7;
+}
+.footer-base a { color: var(--green); font-weight: 600; }
+
+/* ── REVEAL ───────────────────────────────────────────────── */
+/* JS adds .reveal-ready, so with JS disabled or broken the
+   content is simply visible. The old build could strand
+   content at opacity:0. */
+.reveal-ready .reveal {
+  opacity: 0; transform: translateY(18px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.reveal-ready .reveal.is-in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-ready .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+/* ── PRINT ────────────────────────────────────────────────── */
+@media print {
+  .nav, .hero-ctas, .forms, .skip-link { display: none; }
+  body { background: #fff; color: #000; }
+}
